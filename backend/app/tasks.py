@@ -1,11 +1,12 @@
 import os
 import subprocess
 from pathlib import Path
-from .celery_app import cel
-from .database import SessionLocal
-from . import crud, models
-from .utils import make_paths
+from celery_app import cel
+from database import SessionLocal
+import crud, models
+from utils import make_paths
 import json
+import re  # needed for regex matching in audio titles
 
 # renditions: label, widthxheight, video bitrate (k), audio bitrate
 RENDITIONS = [
@@ -21,6 +22,32 @@ def run(cmd):
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     return proc.returncode, proc.stdout, proc.stderr
 
+def get_english_audio_index(source_abs_path):
+    """Return the index of the English audio track if it exists, else fallback to first audio track"""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "stream=index,codec_type:stream_tags",
+        "-of", "json", str(source_abs_path)
+    ]
+    code, out, err = run(cmd)
+    if code != 0:
+        raise RuntimeError(f"ffprobe failed: {err}")
+    
+    info = json.loads(out)
+    first_audio_idx = None
+    for stream in info.get("streams", []):
+        if stream.get("codec_type") == "audio":
+            if first_audio_idx is None:
+                first_audio_idx = stream["index"]
+            tags = stream.get("tags", {})
+            language = tags.get("language", "").lower()
+            title = tags.get("title", "").lower()
+            if language == "eng" or re.search(r"\beng(lish)?\b", title):
+                return stream["index"]
+    if first_audio_idx is not None:
+        return first_audio_idx
+    raise RuntimeError("No audio track found in video")
+
 @cel.task(bind=True)
 def transcode_job(self, show_title, season, episode_number, source_abs_path, episode_id):
     db = SessionLocal()
@@ -29,6 +56,8 @@ def transcode_job(self, show_title, season, episode_number, source_abs_path, epi
     work_dir.mkdir(parents=True, exist_ok=True)
 
     try:
+        eng_audio_idx = get_english_audio_index(source_abs_path)
+
         # generate per-rendition playlists into subfolders
         rendition_meta = {}
         for label, resolution, vbit, abitrate in RENDITIONS:
@@ -39,8 +68,11 @@ def transcode_job(self, show_title, season, episode_number, source_abs_path, epi
 
             cmd = [
                 "ffmpeg", "-y", "-i", str(source_abs_path),
+                "-map", f"0:v:0",             # first video track
+                "-map", f"0:a:{eng_audio_idx}",  # English audio or fallback
                 "-c:v", "libx264", "-profile:v", "main", "-preset", "veryfast", "-crf", "20",
                 "-vf", f"scale={resolution}",
+                "-pix_fmt", "yuv420p",
                 "-b:v", vbit, "-maxrate", vbit, "-bufsize", "2M",
                 "-c:a", "aac", "-b:a", abitrate, "-ac", "2",
                 "-start_number", "0",
@@ -49,6 +81,7 @@ def transcode_job(self, show_title, season, episode_number, source_abs_path, epi
                 "-hls_segment_filename", segment_pattern,
                 str(playlist)
             ]
+
             self.update_state(state="PROGRESS", meta={"current": label})
             code, out, err = run(cmd)
             if code != 0:
@@ -56,7 +89,11 @@ def transcode_job(self, show_title, season, episode_number, source_abs_path, epi
                 raise RuntimeError(f"ffmpeg failed for {label}: {err}")
 
             # store meta
-            rendition_meta[label] = {"playlist": str(Path(base) / label / "index.m3u8"), "bitrate": vbit, "resolution": resolution}
+            rendition_meta[label] = {
+                "playlist": str(Path(base) / label / "index.m3u8"),
+                "bitrate": vbit,
+                "resolution": resolution
+            }
 
         # write master playlist (relative paths to sub-playlists)
         master_path = Path(VIDEO_ROOT) / base / "master.m3u8"
@@ -65,12 +102,11 @@ def transcode_job(self, show_title, season, episode_number, source_abs_path, epi
             for label, info in rendition_meta.items():
                 bw = int(info["bitrate"].replace("k","")) * 1000
                 res = info["resolution"]
-                # EXT-X-STREAM-INF must reference the sub-playlist path relative to master
                 f.write(f"#EXT-X-STREAM-INF:BANDWIDTH={bw},RESOLUTION={res}\n")
                 f.write(f"{label}/index.m3u8\n")
 
         # update DB
-        master_rel = str(Path(base) / "master.m3u8")  # e.g. "southpark/Season1/Episode1/master.m3u8"
+        master_rel = str(Path(base) / "master.m3u8")
         crud.update_episode_ready(db, episode_id, master_rel, rendition_meta)
         return {"status": "ok", "master": master_rel}
 

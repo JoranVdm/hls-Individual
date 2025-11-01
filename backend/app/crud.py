@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from . import models
+import models
 
 def get_show_by_title(db: Session, title: str):
     return db.query(models.Show).filter(models.Show.title == title).first()

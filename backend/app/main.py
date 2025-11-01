@@ -4,8 +4,8 @@ from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
-from .database import SessionLocal, engine
-from . import models, crud, utils, tasks
+from database import SessionLocal, engine
+import models, crud, utils, tasks
 
 
 # Create tables if they don't exist

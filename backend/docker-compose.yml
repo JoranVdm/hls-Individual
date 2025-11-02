@@ -36,7 +36,7 @@ services:
   worker:
     build: .
     working_dir: /app
-    command: python -m celery -A celery_app.cel worker --loglevel=info
+    command: python -m celery -A celery_app.cel worker --loglevel=info --concurrency=12
     volumes:
       - ./app:/app
       - ./app/videos:/app/videos

@@ -7,6 +7,8 @@ cel = Celery("transcoder", broker=broker, backend=broker)
 cel.conf.task_serializer = 'json'
 cel.conf.accept_content = ['json']
 cel.conf.result_serializer = 'json'
+
 cel.autodiscover_tasks(['tasks'])
+
 import tasks
 

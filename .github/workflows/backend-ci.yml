@@ -21,11 +21,11 @@ jobs:
 
       # 3. Build services using Docker Compose
       - name: Build backend and worker images
-        run: docker-compose -f backend/docker-compose.yml build
+        run: docker compose -f backend/docker-compose.yml build
 
       # 4. Start services and wait for health
       - name: Start services and wait
-        run: docker-compose -f backend/docker-compose.yml up -d --wait
+        run: docker compose -f backend/docker-compose.yml up -d --wait
 
       # 5. Optionally run backend tests
       #- name: Run backend tests

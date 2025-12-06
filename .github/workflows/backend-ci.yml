@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend CI with Docker
 
 on:
   push:
@@ -11,13 +11,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+      # 2. Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Log a message
-        run: echo "Hello! This is a minimal backend CI running."
+      # 3. Build services using Docker Compose
+      - name: Build backend and worker images
+        run: docker-compose -f backend/docker-compose.yml build
+
+      # 4. Spin up services in detached mode
+      - name: Start services
+        run: docker-compose -f backend/docker-compose.yml up -d
+
+      # 5. Wait for services to be healthy
+      - name: Wait for Postgres to be healthy
+        run: |
+          until docker inspect --format='{{.State.Health.Status}}' backend_postgres_1 | grep -q "healthy"; do
+            echo "Waiting for Postgres..."
+            sleep 5
+          done
+
+      - name: Wait for Redis to be healthy
+        run: |
+          until docker inspect --format='{{.State.Health.Status}}' backend_redis_1 | grep -q "healthy"; do
+            echo "Waiting for Redis..."
+            sleep 5
+          done
+
+      # 6. Optionally, run tests (uncomment later)
+      #- name: Run backend tests
+      #  run: docker-compose -f backend/docker-compose.yml run --rm web pytest
+
+      # 7. Optional log message
+      - name: Finish
+        run: echo "Docker images built and services healthy!"

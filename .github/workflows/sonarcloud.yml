@@ -1,0 +1,47 @@
+name: SonarCloud Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repo
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Setup Python for backend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Python dependencies
+        run: pip install -r backend/requirements.txt
+
+      # 3. Setup Node for frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      # 4. Run SonarCloud scan using official Action
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2.2.1
+        with:
+          projectKey: JoranVdm_hls-Individual
+          organization: joranvdm
+          # The paths for sources (relative to repo root)
+          extraProperties: |
+            sonar.sources=backend,frontend/src
+            sonar.python.version=3.10
+            sonar.javascript.node.maxspace=4096
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

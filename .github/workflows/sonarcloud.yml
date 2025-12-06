@@ -32,16 +32,15 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      # 4. Run SonarCloud scan using official Action
+      # 4. Run SonarCloud scan using new recommended action
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v5.0.0
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         with:
-          projectKey: JoranVdm_hls-Individual
-          organization: joranvdm
-          # The paths for sources (relative to repo root)
-          extraProperties: |
-            sonar.sources=backend,frontend/src
-            sonar.python.version=3.10
-            sonar.javascript.node.maxspace=4096
+          args: >
+            -Dsonar.organization=joranvdm
+            -Dsonar.projectKey=JoranVdm_hls-Individual
+            -Dsonar.sources=backend,frontend/src
+            -Dsonar.python.version=3.10
+            -Dsonar.javascript.node.maxspace=4096
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

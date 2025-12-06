@@ -15,38 +15,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Set up Docker Buildx (for multi-platform builds, optional)
+      # 2. Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3. Build backend and worker images using docker compose
+      # 3. Build services using Docker Compose
       - name: Build backend and worker images
-        run: docker compose -f backend/docker-compose.yml build
+        run: docker-compose -f backend/docker-compose.yml build
 
-      # 4. Spin up services in detached mode
-      - name: Start services
-        run: docker compose -f backend/docker-compose.yml up -d
+      # 4. Start services and wait for health
+      - name: Start services and wait
+        run: docker-compose -f backend/docker-compose.yml up -d --wait
 
-      # 5. Wait for Postgres to be healthy
-      - name: Wait for Postgres to be healthy
-        run: |
-          until docker inspect --format='{{.State.Health.Status}}' backend_postgres_1 | grep -q "healthy"; do
-            echo "Waiting for Postgres..."
-            sleep 5
-          done
-
-      # 6. Wait for Redis to be healthy
-      - name: Wait for Redis to be healthy
-        run: |
-          until docker inspect --format='{{.State.Health.Status}}' backend_redis_1 | grep -q "healthy"; do
-            echo "Waiting for Redis..."
-            sleep 5
-          done
-
-      # 7. Optionally, run backend tests (uncomment when ready)
+      # 5. Optionally run backend tests
       #- name: Run backend tests
-      #  run: docker compose -f backend/docker-compose.yml run --rm web pytest
+      #  run: docker-compose -f backend/docker-compose.yml run --rm web pytest
 
-      # 8. Optional log message
+      # 6. Finish
       - name: Finish
         run: echo "Docker images built and services are healthy!"

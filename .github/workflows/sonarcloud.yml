@@ -40,6 +40,7 @@ jobs:
             -Dsonar.organization=joranvdm
             -Dsonar.projectKey=JoranVdm_hls-Individual
             -Dsonar.sources=backend,frontend/src
+            -Dsonar.exclusions=backend/app/videos/**
             -Dsonar.python.version=3.10
             -Dsonar.javascript.node.maxspace=4096
         env:

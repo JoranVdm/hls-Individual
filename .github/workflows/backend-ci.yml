@@ -1,4 +1,4 @@
-name: Backend CI with Docker
+name: Backend CI + DockerHub Push
 
 on:
   push:
@@ -19,18 +19,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3. Build services using Docker Compose
-      - name: Build backend and worker images
+      # 3. Log in to Docker Hub (using secrets)
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 4. Build the Docker images using Docker Compose
+      - name: Build Docker images
         run: docker compose -f backend/docker-compose.yml build
 
-      # 4. Start services and wait for health
-      - name: Start services and wait
+      # 5. Tag and Push images to DockerHub  
+      - name: Push Docker images
+        run: |
+          docker tag backend_web:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:web
+          docker tag backend_worker:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:worker
+          docker tag backend_beat:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:beat
+
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:web
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:worker
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:beat
+
+      # 6. (Optional) Run the full compose stack to verify health
+      - name: Start services and wait for health
         run: docker compose -f backend/docker-compose.yml up -d --wait
 
-      # 5. Optionally run backend tests
-      #- name: Run backend tests
-      #  run: docker-compose -f backend/docker-compose.yml run --rm web pytest
-
-      # 6. Finish
+      # 7. Finish
       - name: Finish
-        run: echo "Docker images built and services are healthy!"
+        run: echo "Docker images built, pushed to Docker Hub, and services are healthy!"

@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from database import SessionLocal, engine
 import models, crud, utils, tasks
+from cache.redis_cache import cache
+
 
 
 # Create tables if they don't exist
@@ -58,18 +60,29 @@ def read_root():
 # -------------------------
 @app.get("/shows")
 def list_shows(db: Session = Depends(get_db)):
+    # Try Redis cache
+    cached = cache.get("all_shows")
+    if cached is not None:
+        return {"source": "cache", "shows": cached}
+
+    # Not cached → fetch from DB
     shows = db.query(models.Show).all()
-    return {
-        "shows": [
-            {
-                "id": s.id,
-                "title": s.title,
-                "description": s.description,
-                "cover_url": s.cover,
-            }
-            for s in shows
-        ]
-    }
+
+    result = [
+        {
+            "id": s.id,
+            "title": s.title,
+            "description": s.description,
+            "cover_url": s.cover,
+        }
+        for s in shows
+    ]
+
+    # Save to Redis for 5 minutes
+    cache.set("all_shows", result, ttl_seconds=300)
+
+    return {"source": "database", "shows": result}
+
 
 @app.post("/shows")
 def create_show(
@@ -87,7 +100,12 @@ def create_show(
         cover_path = f"/covers/{safe_filename}"
 
     show = crud.create_show(db, title=title, description=description, cover=cover_path)
+
+    # Invalidate cache (so next GET /shows refreshes it)
+    cache.delete("all_shows")
+
     return {"show_id": show.id, "title": show.title}
+
 
 # -------------------------
 # EPISODE endpoints

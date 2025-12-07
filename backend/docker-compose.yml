@@ -44,6 +44,7 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg2://postgres:mysecret@postgres:5432/streaming
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
 
   worker:
     build: .
@@ -60,6 +61,24 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg2://postgres:mysecret@postgres:5432/streaming
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+
+  beat:
+    build: .
+    working_dir: /app
+    command: python -m celery -A celery_app.cel beat --loglevel=info
+    volumes:
+      - ./app:/app
+      - ./app/videos:/app/videos
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:mysecret@postgres:5432/streaming
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
 
 volumes:
   pgdata:

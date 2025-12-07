@@ -33,9 +33,9 @@ jobs:
       # 5. Tag and Push images to DockerHub  
       - name: Push Docker images
         run: |
-          docker tag backend_web:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:web
-          docker tag backend_worker:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:worker
-          docker tag backend_beat:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:beat
+          docker tag backend-web:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:web
+          docker tag backend-worker:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:worker
+          docker tag backend-beat:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:beat
 
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:web
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:worker

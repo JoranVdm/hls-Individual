@@ -1,10 +1,28 @@
+import os
 import redis
 import json
 from typing import Optional, Any
 
 class RedisCache:
-    def __init__(self, host: str = "redis", port: int = 6379, db: int = 1):
-        self.client = redis.Redis(host=host, port=port, db=db, decode_responses=True)
+    def __init__(self):
+        redis_url = os.getenv("REDIS_CACHE_URL")
+
+        if redis_url:
+            print("🔌 USING UPSTASH REDIS (TCP)")
+            print("REDIS_CACHE_URL =", redis_url)
+            self.client = redis.from_url(
+                redis_url,
+                decode_responses=True
+            )
+        else:
+            print("⚠️ USING LOCAL DOCKER REDIS")
+            self.client = redis.Redis(
+                host="redis",
+                port=6379,
+                db=1,
+                decode_responses=True
+            )
+
 
     def get(self, key: str) -> Optional[Any]:
         data = self.client.get(key)
@@ -19,3 +37,4 @@ class RedisCache:
         self.client.delete(key)
 
 cache = RedisCache()
+

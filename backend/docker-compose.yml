@@ -45,6 +45,7 @@ services:
       - DATABASE_URL=postgresql+psycopg2://postgres:mysecret@postgres:5432/streaming
       - CELERY_BROKER_URL=redis://redis:6379/0
       - PYTHONPATH=/app
+      - REDIS_CACHE_URL=${REDIS_CACHE_URL}
 
   worker:
     build: .
@@ -62,6 +63,7 @@ services:
       - DATABASE_URL=postgresql+psycopg2://postgres:mysecret@postgres:5432/streaming
       - CELERY_BROKER_URL=redis://redis:6379/0
       - PYTHONPATH=/app
+      - REDIS_CACHE_URL=${REDIS_CACHE_URL}
 
   beat:
     build: .
@@ -79,6 +81,7 @@ services:
       - DATABASE_URL=postgresql+psycopg2://postgres:mysecret@postgres:5432/streaming
       - CELERY_BROKER_URL=redis://redis:6379/0
       - PYTHONPATH=/app
+      - REDIS_CACHE_URL=${REDIS_CACHE_URL}
 
 volumes:
   pgdata:

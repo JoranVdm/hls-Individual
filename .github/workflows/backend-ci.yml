@@ -28,9 +28,11 @@ jobs:
 
       # 4. Build the Docker images using Docker Compose
       - name: Build Docker images
+        env:
+          REDIS_CACHE_URL: ${{ secrets.REDIS_CACHE_URL }}
         run: docker compose -f backend/docker-compose.yml build
 
-      # 5. Tag and Push images to DockerHub  
+      # 5. Tag and Push images to DockerHub
       - name: Push Docker images
         run: |
           docker tag backend-web:latest ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:web
@@ -41,8 +43,10 @@ jobs:
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:worker
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/hls-backend:beat
 
-      # 6. (Optional) Run the full compose stack to verify health
+      # 6. Run the full compose stack to verify health (uses Upstash cache)
       - name: Start services and wait for health
+        env:
+          REDIS_CACHE_URL: ${{ secrets.REDIS_CACHE_URL }}
         run: docker compose -f backend/docker-compose.yml up -d --wait
 
       # 7. Finish

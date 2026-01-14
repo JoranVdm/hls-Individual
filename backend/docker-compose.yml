@@ -28,6 +28,8 @@ services:
 
   web:
     build: .
+    env_file:
+      - .env
     working_dir: /app
     command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
@@ -49,6 +51,8 @@ services:
 
   worker:
     build: .
+    env_file:
+      - .env
     working_dir: /app
     command: python -m celery -A celery_app.cel worker --loglevel=info --concurrency=12
     volumes:
@@ -67,6 +71,8 @@ services:
 
   beat:
     build: .
+    env_file:
+      - .env
     working_dir: /app
     command: python -m celery -A celery_app.cel beat --loglevel=info
     volumes:

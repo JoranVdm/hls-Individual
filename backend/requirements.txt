@@ -10,3 +10,4 @@ aiofiles
 celery[redis]
 redis
 python-slugify
+supabase

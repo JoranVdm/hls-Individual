@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-broker
+  template:
+    metadata:
+      labels:
+        app: redis-broker
+    spec:
+      containers:
+        - name: redis-broker
+          image: redis:7
+          ports:
+            - containerPort: 6379

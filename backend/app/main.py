@@ -116,27 +116,43 @@ def list_episodes(show_id: int, db: Session = Depends(get_db)):
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
 
-    episodes = [
-        {
+    episodes = []
+    for ep in show.episodes:
+        # Determine playlist URL
+        if ep.master_path.startswith("http"):
+            playlist_url = ep.master_path
+        else:
+            playlist_url = f"/videos/{ep.master_path}"
+
+        episodes.append({
             "id": ep.id,
-        "title": ep.title,
-        "duration": ep.duration,
-        "status": ep.status,
-        "renditions": ep.renditions,
-        "playlist_path": ep.master_path,
-        }
-        for ep in show.episodes
-    ]
+            "title": ep.title,
+            "duration": ep.duration,
+            "status": ep.status,
+            "renditions": ep.renditions,
+            "playlist_path": playlist_url,  # now always a usable URL
+        })
+
     return {"show": show.title, "episodes": episodes}
 
 @app.get("/shows/{show_id}/playlist/{episode_id}")
 def get_episode_playlist(show_id: int, episode_id: int, db: Session = Depends(get_db)):
-    episode = db.query(models.Episode).filter(models.Episode.id == episode_id, models.Episode.show_id == show_id).first()
+    episode = db.query(models.Episode).filter(
+        models.Episode.id == episode_id,
+        models.Episode.show_id == show_id
+    ).first()
+
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
 
-    playlist_url = f"/videos/{episode.playlist_path}"
+    # Directly return the stored master_path (full URL)
+    playlist_url = episode.master_path
+
     return {"episode": episode.title, "playlist": playlist_url}
+
+
+
+
 
 # -------------------------
 # Episode upload + enqueue (transcoding)

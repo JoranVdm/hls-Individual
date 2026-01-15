@@ -9,6 +9,12 @@ on:
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
+    env:
+      REDIS_CACHE_URL: ${{ secrets.REDIS_CACHE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_BUCKET: ${{ secrets.SUPABASE_BUCKET }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
     steps:
       # 1. Checkout code
@@ -28,8 +34,6 @@ jobs:
 
       # 4. Build the Docker images using Docker Compose
       - name: Build Docker images
-        env:
-          REDIS_CACHE_URL: ${{ secrets.REDIS_CACHE_URL }}
         run: docker compose -f backend/docker-compose.yml build
 
       # 5. Tag and Push images to DockerHub
@@ -45,8 +49,6 @@ jobs:
 
       # 6. Run the full compose stack to verify health (uses Upstash cache)
       - name: Start services and wait for health
-        env:
-          REDIS_CACHE_URL: ${{ secrets.REDIS_CACHE_URL }}
         run: docker compose -f backend/docker-compose.yml up -d --wait
 
       # 7. Finish

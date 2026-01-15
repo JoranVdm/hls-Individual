@@ -1,0 +1,7 @@
+backend/app/**
+backend/.env
+backend/docker-compose.yml
+backend/requirements.txt
+backend/Dockerfile
+backend/venv/**
+

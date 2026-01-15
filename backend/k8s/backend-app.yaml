@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backend-app
+  namespace: argocd
+spec:
+  project: default
+
+  # Where ArgoCD looks for your manifests
+  source:
+    repoURL: 'git@github.com:JoranVdm/hls-individual.git'
+    targetRevision: main
+    path: backend/k8s/backend
+
+  # Where ArgoCD deploys
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true         # removes resources that are deleted from Git
+      selfHeal: true      # automatically fixes drift
+    syncOptions:
+      - CreateNamespace=true  # auto-create namespace if missing

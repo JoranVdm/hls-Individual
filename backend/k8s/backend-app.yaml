@@ -17,9 +17,14 @@ spec:
     name: docker-desktop
     namespace: default
 
+  # Manual sync only
   syncPolicy:
-    automated:
-      prune: true         # removes resources that are deleted from Git
-      selfHeal: true      # automatically fixes drift
     syncOptions:
       - CreateNamespace=true  # auto-create namespace if missing
+      - ApplyOutOfSyncOnly=true  # only apply resources that are out-of-sync
+      - PruneLast=true          # prune after applying updates
+
+  # Increase manifest generation timeout to 10 minutes
+  info:
+    - name: argocd.argoproj.io/timeout
+      value: "600"  # seconds

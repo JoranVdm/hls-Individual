@@ -8,9 +8,11 @@ spec:
 
   # Where ArgoCD looks for your manifests
   source:
-    repoURL: https://github.com/JoranVdm/hls-individual.git
+    repoURL: git@github.com:JoranVdm/hls-individual.git
     targetRevision: main
     path: backend/k8s/backend
+    directory:
+      recurse: true
 
   # Where ArgoCD deploys
   destination:

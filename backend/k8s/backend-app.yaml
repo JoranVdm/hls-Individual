@@ -16,7 +16,7 @@ spec:
 
   # Where ArgoCD deploys
   destination:
-    name: docker-desktop
+    name: https://kubernetes.default.svc
     namespace: default
 
   # Manual sync only

@@ -112,14 +112,22 @@ def create_show(
 # -------------------------
 @app.get("/shows/{show_id}/episodes")
 def list_episodes(show_id: int, db: Session = Depends(get_db)):
-    show = db.query(models.Show).options(joinedload(models.Show.episodes)).filter(models.Show.id == show_id).first()
+    show = (
+        db.query(models.Show)
+        .options(joinedload(models.Show.episodes))
+        .filter(models.Show.id == show_id)
+        .first()
+    )
+
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
 
     episodes = []
     for ep in show.episodes:
-        # Determine playlist URL
-        if ep.master_path.startswith("http"):
+        # Episode not ready yet → no playlist
+        if ep.master_path is None:
+            playlist_url = None
+        elif ep.master_path.startswith("http"):
             playlist_url = ep.master_path
         else:
             playlist_url = f"/videos/{ep.master_path}"
@@ -130,7 +138,7 @@ def list_episodes(show_id: int, db: Session = Depends(get_db)):
             "duration": ep.duration,
             "status": ep.status,
             "renditions": ep.renditions,
-            "playlist_path": playlist_url,  # now always a usable URL
+            "playlist_path": playlist_url,
         })
 
     return {"show": show.title, "episodes": episodes}
